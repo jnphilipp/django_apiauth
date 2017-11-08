@@ -66,3 +66,34 @@ class Application(models.Model):
         ordering = ('name',)
         verbose_name = _('Application')
         verbose_name_plural = _('Applications')
+
+
+class AuthRequest(models.Model):
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_('Created at')
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_('Updated at')
+    )
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_('User')
+    )
+    timestamp = models.DateTimeField(
+        verbose_name=_('Timestamp')
+    )
+
+    def __str__(self):
+        return '%s - %s ' % (
+            self.user,
+            self.timestamp.strftime('%Y-%m-%dT%H:%M:%S:%f%z')
+        )
+
+    class Meta:
+        ordering = ('user',)
+        unique_together = ('user', 'timestamp')
+        verbose_name = _('Auth request')
+        verbose_name_plural = _('Auth requests')
