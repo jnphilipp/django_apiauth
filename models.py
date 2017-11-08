@@ -97,3 +97,40 @@ class AuthRequest(models.Model):
         unique_together = ('user', 'timestamp')
         verbose_name = _('Auth request')
         verbose_name_plural = _('Auth requests')
+
+
+class AuthedUser(models.Model):
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_('Created at')
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name=_('Updated at')
+    )
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_('User')
+    )
+    token = SingleLineTextField(
+        unique=True,
+        verbose_name=_('Token')
+    )
+    n = models.PositiveIntegerField(
+        default=random.u32,
+        verbose_name=_('N')
+    )
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.token = random.hex(32)
+        super(AuthedUser, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return self.user
+
+    class Meta:
+        ordering = ('user',)
+        verbose_name = _('Authenticated user')
+        verbose_name_plural = _('Authenticated users')
