@@ -16,14 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with django_apiauth. If not, see <http://www.gnu.org/licenses/>.
 
-from django.apps import AppConfig
-from django.utils.translation import ugettext_lazy as _
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
+from django.utils import timezone
+from .models import AuthedUser, AuthRequest
 
 
-class DjangoApiAuthConfig(AppConfig):
-    name = 'django_apiauth'
-    verbose_name = _('Django API auth')
-    verbose_name_plural = _('Django API auth')
+@receiver(pre_save, sender=AuthRequest)
+def delete_old_auth_requests(sender, **kwargs):
+    AuthRequest.objects.filter(
+        timestamp__lte=(timezone.now() - timezone.timedelta(minutes=5))
+    ).delete()
 
-    def ready(self):
-        import .signals
+
+@receiver(pre_save, sender=AuthRequest)
+def delete_old_authed_users(sender, **kwargs):
+    AuthedUser.objects.filter(
+        updated_at__lte=(timezone.now() - timezone.timedelta(hours=1))
+    ).delete()
