@@ -1,1 +1,1 @@
-# django api-auth app
+# django_apiauth app
