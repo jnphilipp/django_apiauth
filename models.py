@@ -19,6 +19,7 @@
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from hashlib import sha512
 
 from . import random
 
@@ -42,22 +43,21 @@ class Application(models.Model):
         verbose_name=_('Name')
     )
     client_id = SingleLineTextField(
+        default=random.hex32,
         unique=True,
         verbose_name=_('Client ID')
     )
     secret = SingleLineTextField(
+        default=random.hex32,
         unique=True,
         verbose_name=_('Client secret')
     )
 
-    def save(self, *args, **kwargs):
-        if not self.id:
-            self.generate_tokens()
-        super(Application, self).save(*args, **kwargs)
+    def new_client_id(self):
+        self.client_id = random.hex32()
 
-    def generate_tokens(self):
-        self.client_id = random.hex(32)
-        self.secret = random.hex(32)
+    def new_secret(self):
+        self.secret = random.hex32()
 
     def __str__(self):
         return self.name
@@ -95,8 +95,8 @@ class AuthRequest(models.Model):
     class Meta:
         ordering = ('user',)
         unique_together = ('user', 'timestamp')
-        verbose_name = _('Auth request')
-        verbose_name_plural = _('Auth requests')
+        verbose_name = _('Authentication request')
+        verbose_name_plural = _('Authentication requests')
 
 
 class AuthedUser(models.Model):
@@ -113,18 +113,29 @@ class AuthedUser(models.Model):
         settings.AUTH_USER_MODEL,
         verbose_name=_('User')
     )
-    token = SingleLineTextField(
-        unique=True,
-        verbose_name=_('Token')
-    )
     n = models.PositiveIntegerField(
         default=random.u32,
         verbose_name=_('N')
     )
+    secret = SingleLineTextField(
+        default=random.hex32,
+        unique=True,
+        verbose_name=_('Secret')
+    )
+    token = SingleLineTextField(
+        unique=True,
+        verbose_name=_('Token')
+    )
+
+    def next_token(self):
+        self.n = (self.n + 1) % 2147483647
+        self.token = sha512(
+            ('%s%s' % (self.secret, self.n)).encode('utf-8')
+        ).hexdigest()
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.token = random.hex(32)
+            self.next_token()
         super(AuthedUser, self).save(*args, **kwargs)
 
     def __str__(self):
