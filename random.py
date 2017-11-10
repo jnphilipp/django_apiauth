@@ -19,15 +19,17 @@
 from os import urandom
 
 
-def hex(length=32):
+def hex(length):
     return ''.join('%02x' % i for i in urandom(length))
 
 
+def hex32():
+    return hex(32)
+
+
 def s64():
-    r = ''.join(['%02x' % h for h in urandom(8)])
-    return abs(9223372036854775807 - int(r, 16))
+    return abs(9223372036854775807 - int(hex(8), 16))
 
 
 def u32():
-    r = ''.join(['%02x' % h for h in urandom(4)])
-    return abs(2147483647 - int(r, 16))
+    return abs(2147483647 - int(hex(4), 16))
