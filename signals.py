@@ -24,6 +24,7 @@ from .models import AuthedUser, AuthRequest
 
 @receiver(pre_save, sender=AuthRequest)
 def delete_old_auth_requests(sender, **kwargs):
+    """Delete authentication requests after 5 minutes."""
     AuthRequest.objects.filter(
         timestamp__lte=(timezone.now() - timezone.timedelta(minutes=5))
     ).delete()
@@ -31,6 +32,7 @@ def delete_old_auth_requests(sender, **kwargs):
 
 @receiver(pre_save, sender=AuthRequest)
 def delete_old_authed_users(sender, **kwargs):
+    """Logs users out after one hour of inactivity."""
     AuthedUser.objects.filter(
         updated_at__lte=(timezone.now() - timezone.timedelta(hours=1))
     ).delete()

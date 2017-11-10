@@ -26,4 +26,4 @@ class DjangoApiAuthConfig(AppConfig):
     verbose_name_plural = _('Django API auth')
 
     def ready(self):
-        import .signals
+        from . import signals
