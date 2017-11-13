@@ -24,9 +24,21 @@ from django.utils import timezone
 USER_SETTINGS = getattr(settings, "API_AUTH", {})
 
 
-APPLICATIONS_ONLY = True
-if 'APPLICATIONS_ONLY' in USER_SETTINGS:
-    APPLICATIONS_ONLY = USER_SETTINGS['APPLICATIONS_ONLY']
+REQUIRE_TWO_STEP_AUTHENTICATION = True
+if 'REQUIRE_TWO_STEP_AUTHENTICATION' in USER_SETTINGS:
+    REQUIRE_TWO_STEP_AUTHENTICATION = \
+        USER_SETTINGS['REQUIRE_TWO_STEP_AUTHENTICATION']
+
+
+APPLICATIONS = False
+if 'APPLICATIONS' in USER_SETTINGS:
+    APPLICATIONS = USER_SETTINGS['APPLICATIONS']
+    if APPLICATIONS and not REQUIRE_TWO_STEP_AUTHENTICATION:
+        raise ImproperlyConfigured(
+            ('Bad value for REQUIRE_TWO_STEP_AUTHENTICATION: "%r". If ' +
+             'APPLICATIONS is True REQUIRE_TWO_STEP_AUTHENTICATION cannot be' +
+             ' False.') % REQUIRE_TWO_STEP_AUTHENTICATION
+        )
 
 
 AUTH_REQUEST_TIME = timezone.timedelta(minutes=5)
@@ -34,7 +46,7 @@ if 'AUTH_REQUEST_TIME' in USER_SETTINGS:
     AUTH_REQUEST_TIME = USER_SETTINGS['AUTH_REQUEST_TIME']
     if type(AUTH_REQUEST_TIME) != timezone.timedelta:
         raise ImproperlyConfigured(
-            'Bad value for AUTH_REQUEST_TIME: %r' % AUTH_REQUEST_TIME
+            'Bad value for AUTH_REQUEST_TIME: "%r"' % AUTH_REQUEST_TIME
         )
 
 
@@ -43,5 +55,14 @@ if 'AUTHED_USER_TIME' in USER_SETTINGS:
     AUTHED_USER_TIME = USER_SETTINGS['AUTHED_USER_TIME']
     if type(AUTHED_USER_TIME) != timezone.timedelta:
         raise ImproperlyConfigured(
-            'Bad value for AUTHED_USER_TIME: %r' % AUTHED_USER_TIME
+            'Bad value for AUTHED_USER_TIME: "%r"' % AUTHED_USER_TIME
+        )
+
+
+TOKEN_LIVE_TIME = 'request'
+if 'TOKEN_LIVE_TIME' in USER_SETTINGS:
+    TOKEN_LIVE_TIME = USER_SETTINGS['TOKEN_LIVE_TIME']
+    if TOKEN_LIVE_TIME not in ['session', 'request']:
+        raise ImproperlyConfigured(
+            'Bad value for TOKEN_LIVE_TIME: "%r"' % TOKEN_LIVE_TIME
         )

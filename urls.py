@@ -17,12 +17,13 @@
 # along with django_apiauth. If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf.urls import url
+
 from . import views
 
 
 urlpatterns = [
     url(r'request/?$', django_apiauth.request),
     url(r'authenticate/?$', django_apiauth.authenticate),
-    url(r'refresh/?$', django_apiauth.refresh),
+    url(r'heartbeat/?$', django_apiauth.heartbeat),
     url(r'revoke/?$', django_apiauth.revoke),
 ]

@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created at')),
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated at')),
                 ('name', django_apiauth.models.SingleLineTextField(unique=True, verbose_name='Name')),
-                ('client_id', django_apiauth.models.SingleLineTextField(default=django_apiauth.random.hex32, unique=True, verbose_name='Client ID')),
+                ('client_id', models.SlugField(unique=True, verbose_name='Client ID')),
                 ('secret', django_apiauth.models.SingleLineTextField(default=django_apiauth.random.hex32, unique=True, verbose_name='Client secret')),
             ],
             options={

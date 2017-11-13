@@ -28,7 +28,7 @@ from hashlib import sha512
 
 from .decorators import authentication_required
 from .models import Application, AuthedUser, AuthRequest
-from .settings import APPLICATIONS_ONLY
+from .settings import APPLICATIONS, TOKEN_LIVE_TIME
 
 
 @csrf_exempt
@@ -37,7 +37,7 @@ def request(request):
 
     GET/POST parameters:
     user_id --- main user id e.g. username, email etc.
-    client_id --- application client id, required if APPLICATIONS_ONLY is true
+    client_id --- application client id, required if APPLICATIONS is true
     """
     params = request.POST.copy() if request.method == 'POST' \
         else request.GET.copy()
@@ -52,7 +52,7 @@ def request(request):
             return HttpResponseNotFound(
                 'The apllication with "%s" was not found.' % client_id
             )
-    elif APPLICATIONS_ONLY:
+    elif APPLICATIONS:
         return HttpResponseBadRequest(
             'Required parameter "client_id" is missing.'
         )
@@ -90,9 +90,9 @@ def authenticate(request):
     user_id --- main user id e.g. username, email etc.
     password --- user password
     timestamp --- timestamp from the response of the request to auth request
-    client_id --- application client id, required if APPLICATIONS_ONLY is true
+    client_id --- application client id, required if APPLICATIONS is true
     token --- hash of application secret and timestamp, required if
-              APPLICATIONS_ONLY is true
+              APPLICATIONS is true
     """
     params = request.POST.copy() if request.method == 'POST' \
         else request.GET.copy()
@@ -107,7 +107,7 @@ def authenticate(request):
             return HttpResponseNotFound(
                 'The application with "%s" was not found.' % client_id
             )
-    elif APPLICATIONS_ONLY:
+    elif APPLICATIONS:
         return HttpResponseBadRequest(
             'Required parameter "client_id" is missing.'
         )
@@ -148,7 +148,7 @@ def authenticate(request):
             return HttpResponseBadRequest(
                 'Required parameter "timestamp" has wrong format.'
             )
-    else:
+    elif APPLICATIONS:
         return HttpResponseBadRequest(
             'Required parameter "timestamp" is missing.'
         )
@@ -161,24 +161,27 @@ def authenticate(request):
         )).encode('utf-8')).hexdigest()
         if recived_token != token:
             return HttpResponseForbidden('Wrong "token" was given.')
-    elif APPLICATIONS_ONLY:
+        auth_request.delete()
+    elif APPLICATIONS:
         return HttpResponseBadRequest('Required parameter "token" is missing.')
 
     authed_user, created = AuthedUser.objects.update_or_create(user=user)
-    auth_request.delete()
     data = {
         'response_date': timezone.now().strftime('%Y-%m-%dT%H:%M:%S:%f%z'),
-        'n': authed_user.n,
-        'secret': authed_user.secret
     }
+    if TOKEN_LIVE_TIME == 'session':
+        data['token'] = authed_user.token
+    elif TOKEN_LIVE_TIME == 'request':
+        data['n'] = authed_user.n,
+        data['secret'] = authed_user.secret
     return HttpResponse(json.dumps(data), 'application/json')
 
 
 @csrf_exempt
 @authentication_required
-def refresh(request):
-    """Handels the POST/GET request to refresh an authentication.
-    Useful as a heartbeat to prevent auto revoke after one hour of idle.
+def heartbeat(request):
+    """Handels the POST/GET request to do a heartbeat.
+    Useful to prevent auto revoke after AUTHED_USER_TIME of idle.
 
     GET/POST parameters:
     token --- token: hash of secret and n,
@@ -199,7 +202,7 @@ def revoke(request):
     token --- token: hash of secret and n,
               both received by the authenticate request
     """
-    AuthedUser.objects.update_or_create(user=request.user).delete()
+    AuthedUser.objects.get(user=request.user).delete()
     data = {
         'response_date': timezone.now().strftime('%Y-%m-%dT%H:%M:%S:%f%z')
     }

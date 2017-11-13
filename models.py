@@ -18,10 +18,12 @@
 
 from django.conf import settings
 from django.db import models
+from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext_lazy as _
 from hashlib import sha512
 
 from . import random
+from .settings import TOKEN_LIVE_TIME
 
 
 class SingleLineTextField(models.TextField):
@@ -42,8 +44,7 @@ class Application(models.Model):
         unique=True,
         verbose_name=_('Name')
     )
-    client_id = SingleLineTextField(
-        default=random.hex32,
+    client_id =  models.SlugField(
         unique=True,
         verbose_name=_('Client ID')
     )
@@ -53,11 +54,18 @@ class Application(models.Model):
         verbose_name=_('Client secret')
     )
 
-    def new_client_id(self):
-        self.client_id = random.hex32()
-
     def new_secret(self):
         self.secret = random.hex32()
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        else:
+            orig = Application.objects.get(pk=self.id)
+            if orig.name != self.name:
+                self.slug = slugify(self.name)
+        super(Application, self).save(*args, **kwargs)
+
 
     def __str__(self):
         return self.name
@@ -128,7 +136,8 @@ class AuthedUser(models.Model):
     )
 
     def next_token(self):
-        self.n = (self.n + 1) % 2147483647
+        if TOKEN_LIVE_TIME == 'request':
+            self.n = (self.n + 1) % 2147483647
         self.token = sha512(
             ('%s%s' % (self.secret, self.n)).encode('utf-8')
         ).hexdigest()
