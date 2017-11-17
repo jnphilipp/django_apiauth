@@ -28,7 +28,8 @@ from hashlib import sha512
 
 from .decorators import authentication_required
 from .models import Application, AuthedUser, AuthRequest
-from .settings import APPLICATIONS, TOKEN_LIVE_TIME
+from .settings import (APPLICATIONS, REQUIRE_TWO_STEP_AUTHENTICATION,
+                       TOKEN_LIVE_TIME)
 
 
 @csrf_exempt
@@ -148,7 +149,7 @@ def authenticate(request):
             return HttpResponseBadRequest(
                 'Required parameter "timestamp" has wrong format.'
             )
-    elif APPLICATIONS:
+    elif APPLICATIONS or REQUIRE_TWO_STEP_AUTHENTICATION:
         return HttpResponseBadRequest(
             'Required parameter "timestamp" is missing.'
         )

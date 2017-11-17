@@ -20,13 +20,14 @@ from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 from .models import AuthedUser, AuthRequest
+from .settings import AUTH_REQUEST_TIME, AUTHED_USER_TIME
 
 
 @receiver(pre_save, sender=AuthRequest)
 def delete_old_auth_requests(sender, **kwargs):
     """Delete authentication requests after 5 minutes."""
     AuthRequest.objects.filter(
-        timestamp__lte=(timezone.now() - timezone.timedelta(minutes=5))
+        timestamp__lte=(timezone.now() - AUTH_REQUEST_TIME)
     ).delete()
 
 
@@ -34,5 +35,5 @@ def delete_old_auth_requests(sender, **kwargs):
 def delete_old_authed_users(sender, **kwargs):
     """Logs users out after one hour of inactivity."""
     AuthedUser.objects.filter(
-        updated_at__lte=(timezone.now() - timezone.timedelta(hours=1))
+        updated_at__lte=(timezone.now() - AUTHED_USER_TIME)
     ).delete()
