@@ -139,7 +139,8 @@ class AuthedUser(models.Model):
         if TOKEN_LIVE_TIME == 'request':
             self.n = (self.n + 1) % 2147483647
         self.token = sha512(
-            ('%s%s' % (self.secret, self.n)).encode('utf-8')
+            ('%s%s%s' % (self.user.get_username(), self.secret,
+                         self.n)).encode('utf-8')
         ).hexdigest()
 
     def save(self, *args, **kwargs):
